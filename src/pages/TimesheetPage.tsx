@@ -1,40 +1,49 @@
-import { useState, useMemo, type FormEvent } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import MobileLayout from "../components/layout/MobileLayout";
-import { DEFAULT_SUPERVISOR, MOCK_PROJECTS, saveLocalTimesheet } from "../services/api";
-import { AttendanceStatus } from "../types/timesheet.types";
+import { getAuth, fetchProjects, saveLocalTimesheet, FALLBACK_PROJECTS } from "../services/api";
+import { AttendanceStatus, ProjectSite } from "../types/timesheet.types";
 import { User, Calendar, Clock, MessageSquare, CheckCircle, ShieldCheck } from "lucide-react";
+
+function todayString() {
+  return new Date().toISOString().split("T")[0];
+}
 
 export default function TimesheetPage() {
   const navigate = useNavigate();
+  const user = getAuth();
 
-  // Form State matching Screen 2 & Screen 3
-  const [employee] = useState(`${DEFAULT_SUPERVISOR.empId}-${DEFAULT_SUPERVISOR.name}`);
-  const [date, setDate] = useState("2026-10-28");
+  const [projects, setProjects] = useState<ProjectSite[]>(FALLBACK_PROJECTS);
+  const [loadingProjects, setLoadingProjects] = useState(true);
+
+  // Form state
+  const [date, setDate] = useState(todayString());
   const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>("Present");
-  const [projectCode, setProjectCode] = useState("UBR505");
+  const [projectCode, setProjectCode] = useState("");
   const [regularHrs, setRegularHrs] = useState<number>(8);
   const [normalOt, setNormalOt] = useState<number>(0);
   const [holidayOt, setHolidayOt] = useState<number>(0);
-  const [remarks, setRemarks] = useState("Water test");
-  const [approvalStatus] = useState("Pending Approval");
-  const [nextApprover] = useState("Site Engineer (Dharmendran)");
-
+  const [remarks, setRemarks] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  // Auto-calculated fields:
-  // Total OT = Normal OT + Holiday OT
-  const totalOt = useMemo(() => {
-    return (Number(normalOt) || 0) + (Number(holidayOt) || 0);
-  }, [normalOt, holidayOt]);
+  // Load projects from AK backend
+  useEffect(() => {
+    fetchProjects().then((data) => {
+      if (data.length > 0) {
+        setProjects(data);
+        setProjectCode(data[0].code);
+      } else {
+        setProjectCode(FALLBACK_PROJECTS[0].code);
+      }
+      setLoadingProjects(false);
+    });
+  }, []);
 
-  // Total Hours = Regular Hrs + Total OT
-  const totalHours = useMemo(() => {
-    return (Number(regularHrs) || 0) + totalOt;
-  }, [regularHrs, totalOt]);
+  // Auto-calculations
+  const totalOt = useMemo(() => (Number(normalOt) || 0) + (Number(holidayOt) || 0), [normalOt, holidayOt]);
+  const totalHours = useMemo(() => (Number(regularHrs) || 0) + totalOt, [regularHrs, totalOt]);
 
-  // Handle Attendance status change rules
   const handleStatusChange = (status: AttendanceStatus) => {
     setAttendanceStatus(status);
     if (status === "Absent" || status === "On Leave") {
@@ -43,7 +52,7 @@ export default function TimesheetPage() {
       setHolidayOt(0);
     } else if (status === "Half Day") {
       setRegularHrs(4);
-    } else if (status === "Present") {
+    } else {
       setRegularHrs(8);
     }
   };
@@ -51,16 +60,15 @@ export default function TimesheetPage() {
   const handleSave = (e: FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-
-    const selectedProj = MOCK_PROJECTS.find((p) => p.code === projectCode);
+    const selectedProj = projects.find((p) => p.code === projectCode);
 
     saveLocalTimesheet({
-      empId: DEFAULT_SUPERVISOR.empId,
-      employeeName: DEFAULT_SUPERVISOR.name,
+      empId: user?.id || "unknown",
+      employeeName: user?.name || "Unknown",
       date,
       attendanceStatus,
       projectCode,
-      projectName: selectedProj?.name || "TAK CONST",
+      projectName: selectedProj?.name || projectCode,
       regularHrs,
       normalOt,
       holidayOt,
@@ -68,61 +76,50 @@ export default function TimesheetPage() {
       totalHours,
       remarks,
       approvalStatus: "Pending Approval",
-      nextApprover,
+      nextApprover: "Site Engineer",
     });
 
     setTimeout(() => {
       setIsSaving(false);
-      setShowSuccessToast(true);
-      setTimeout(() => {
-        navigate("/");
-      }, 1200);
+      setShowSuccess(true);
+      setTimeout(() => navigate("/"), 1500);
     }, 400);
   };
 
+  const employeeLabel = user ? `${user.name}` : "—";
+
   return (
     <MobileLayout title="Time Sheet Record">
-      {/* Success Notification Banner */}
-      {showSuccessToast && (
-        <div className="bg-emerald-600 text-white p-3 text-center text-xs font-bold animate-fade-in flex items-center justify-center gap-2">
+      {/* Success Banner */}
+      {showSuccess && (
+        <div className="bg-emerald-600 text-white p-3 text-center text-xs font-bold flex items-center justify-center gap-2">
           <CheckCircle size={16} />
-          <span>Timesheet recorded and routed to Site Engineer!</span>
+          <span>Timesheet saved! Sent for approval.</span>
         </div>
       )}
 
       <form onSubmit={handleSave} className="p-4 space-y-4">
-        
-        {/* Field 1: Employee Name */}
+
+        {/* Employee Name (read-only, from login) */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
+          <div className="w-8 pt-6 flex justify-center text-slate-500">
             <User size={20} />
           </div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Employee Name
-            </label>
-            <div className="relative">
-              <select
-                value={employee}
-                disabled
-                className="w-full bg-white border-b-2 border-slate-300 py-1.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600 appearance-none pr-6 cursor-not-allowed"
-              >
-                <option value={employee}>{employee}</option>
-              </select>
-              <span className="absolute right-1 top-2 text-[10px] text-slate-400 pointer-events-none">▼</span>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Employee Name</label>
+            <div className="border-b-2 border-slate-200 py-1.5 text-xs font-bold text-slate-800 bg-slate-50 px-1 rounded-t">
+              {employeeLabel}
             </div>
           </div>
         </div>
 
-        {/* Field 2: Date */}
+        {/* Date */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
+          <div className="w-8 pt-6 flex justify-center text-slate-500">
             <Calendar size={20} />
           </div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Date
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Date</label>
             <input
               type="date"
               value={date}
@@ -132,15 +129,13 @@ export default function TimesheetPage() {
           </div>
         </div>
 
-        {/* Field 3: Attendance Status */}
+        {/* Attendance Status */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
+          <div className="w-8 pt-6 flex justify-center text-slate-500">
             <ShieldCheck size={20} />
           </div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Attendance Status
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Attendance Status</label>
             <div className="relative">
               <select
                 value={attendanceStatus}
@@ -157,46 +152,41 @@ export default function TimesheetPage() {
           </div>
         </div>
 
-        {/* Field 4: TS Project */}
+        {/* Project */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
-            <span className="text-sm font-bold">🏗️</span>
+          <div className="w-8 pt-6 flex justify-center text-slate-500">
+            <span className="text-sm">🏗️</span>
           </div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              TS Project
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">TS Project</label>
             <div className="relative">
-              <select
-                value={projectCode}
-                onChange={(e) => setProjectCode(e.target.value)}
-                className="w-full bg-white border-b-2 border-slate-300 py-1.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600 appearance-none pr-6"
-              >
-                {MOCK_PROJECTS.map((p) => (
-                  <option key={p.id} value={p.code}>
-                    {p.code} - {p.name}
-                  </option>
-                ))}
-              </select>
+              {loadingProjects ? (
+                <div className="text-xs text-slate-400 py-1.5 border-b-2 border-slate-200">Loading projects…</div>
+              ) : (
+                <select
+                  value={projectCode}
+                  onChange={(e) => setProjectCode(e.target.value)}
+                  className="w-full bg-white border-b-2 border-slate-300 py-1.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600 appearance-none pr-6"
+                >
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.code}>
+                      {p.code} - {p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               <span className="absolute right-1 top-2 text-[10px] text-slate-400 pointer-events-none">▼</span>
             </div>
           </div>
         </div>
 
-        {/* Field 5: Regular Hrs */}
+        {/* Regular Hrs */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
-            <Clock size={20} />
-          </div>
+          <div className="w-8 pt-6 flex justify-center text-slate-500"><Clock size={20} /></div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Regular Hrs
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Regular Hrs</label>
             <input
-              type="number"
-              min="0"
-              max="24"
-              step="0.5"
+              type="number" min="0" max="24" step="0.5"
               value={regularHrs}
               onChange={(e) => setRegularHrs(parseFloat(e.target.value) || 0)}
               className="w-full bg-white border-b-2 border-emerald-500 py-1.5 text-xs font-bold text-slate-900 focus:outline-none font-mono"
@@ -204,20 +194,13 @@ export default function TimesheetPage() {
           </div>
         </div>
 
-        {/* Field 6: Normal OT */}
+        {/* Normal OT */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
-            <Clock size={20} />
-          </div>
+          <div className="w-8 pt-6 flex justify-center text-slate-500"><Clock size={20} /></div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Normal OT
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Normal OT</label>
             <input
-              type="number"
-              min="0"
-              max="16"
-              step="0.5"
+              type="number" min="0" max="16" step="0.5"
               value={normalOt}
               onChange={(e) => setNormalOt(parseFloat(e.target.value) || 0)}
               className="w-full bg-white border-b-2 border-emerald-500 py-1.5 text-xs font-bold text-slate-900 focus:outline-none font-mono"
@@ -225,20 +208,13 @@ export default function TimesheetPage() {
           </div>
         </div>
 
-        {/* Field 7: Holiday OT */}
+        {/* Holiday OT */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
-            <Clock size={20} />
-          </div>
+          <div className="w-8 pt-6 flex justify-center text-slate-500"><Clock size={20} /></div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Holiday OT
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Holiday OT</label>
             <input
-              type="number"
-              min="0"
-              max="16"
-              step="0.5"
+              type="number" min="0" max="16" step="0.5"
               value={holidayOt}
               onChange={(e) => setHolidayOt(parseFloat(e.target.value) || 0)}
               className="w-full bg-white border-b-2 border-emerald-500 py-1.5 text-xs font-bold text-slate-900 focus:outline-none font-mono"
@@ -246,111 +222,77 @@ export default function TimesheetPage() {
           </div>
         </div>
 
-        {/* Field 8: Total OT (Calculated) */}
+        {/* Total OT (calculated) */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
-            <Clock size={20} />
-          </div>
+          <div className="w-8 pt-6 flex justify-center text-slate-500"><Clock size={20} /></div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Total OT
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Total OT</label>
             <input
-              type="number"
-              readOnly
-              value={totalOt}
-              className="w-full bg-slate-50 border-b-2 border-emerald-500 py-1.5 text-xs font-bold text-emerald-800 font-mono cursor-not-allowed"
+              type="number" readOnly value={totalOt}
+              className="w-full bg-slate-50 border-b-2 border-emerald-400 py-1.5 text-xs font-bold text-emerald-800 font-mono cursor-not-allowed"
             />
           </div>
         </div>
 
-        {/* Field 9 & 10: Total Hours (Calculated) */}
+        {/* Total Hours (calculated) */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
-            <Clock size={20} />
-          </div>
+          <div className="w-8 pt-6 flex justify-center text-slate-500"><Clock size={20} /></div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Total Hours
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Total Hours</label>
             <input
-              type="number"
-              readOnly
-              value={totalHours}
-              className="w-full bg-slate-50 border-b-2 border-emerald-500 py-1.5 text-xs font-bold text-blue-900 font-mono cursor-not-allowed"
+              type="number" readOnly value={totalHours}
+              className="w-full bg-slate-50 border-b-2 border-blue-500 py-1.5 text-xs font-bold text-blue-900 font-mono cursor-not-allowed"
             />
           </div>
         </div>
 
-        {/* Field 11: Remarks (matches Screen 3: Water test) */}
+        {/* Remarks */}
         <div className="flex items-start gap-3">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
-            <MessageSquare size={20} />
-          </div>
+          <div className="w-8 pt-6 flex justify-center text-slate-500"><MessageSquare size={20} /></div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Remarks
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Remarks</label>
             <input
               type="text"
-              placeholder="e.g. Water test or slab inspection"
+              placeholder="e.g. Water test, slab inspection…"
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              className="w-full bg-white border-b-2 border-blue-500 py-1.5 text-xs text-slate-900 focus:outline-none"
+              className="w-full bg-white border-b-2 border-blue-400 py-1.5 text-xs text-slate-900 focus:outline-none"
             />
           </div>
         </div>
 
-        {/* Field 12: Approval Status */}
+        {/* Approval Status (auto) */}
         <div className="flex items-start gap-3">
           <div className="w-8 pt-6 flex justify-center text-emerald-600">
             <CheckCircle size={20} />
           </div>
           <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Approval Status
-            </label>
+            <label className="block text-[11px] font-medium text-slate-500 mb-1">Approval Status</label>
             <div className="border-b border-slate-200 py-1.5 text-xs font-bold text-amber-600">
-              {approvalStatus}
+              Pending Approval
             </div>
           </div>
         </div>
 
-        {/* Field 13: Next Approver */}
-        <div className="flex items-start gap-3 pb-6">
-          <div className="w-8 pt-6 flex justify-center text-slate-700">
-            <User size={20} />
-          </div>
-          <div className="flex-1">
-            <label className="block text-[11px] font-medium text-slate-500 mb-1">
-              Next Approver
-            </label>
-            <div className="border-b border-slate-200 py-1.5 text-xs font-semibold text-slate-700">
-              {nextApprover}
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Action Buttons (matches Screen 2 & 3: SAVE | CANCEL in Navy Banner) */}
-        <div className="pt-2 pb-4">
-          <div className="grid grid-cols-2 gap-0 bg-[#0f3f6e] rounded overflow-hidden shadow-lg border border-blue-900">
+        {/* Save / Cancel */}
+        <div className="pt-4 pb-4">
+          <div className="grid grid-cols-2 gap-0 bg-[#0f3f6e] rounded overflow-hidden shadow-lg">
             <button
               type="submit"
-              disabled={isSaving}
-              className="py-3 text-center text-xs font-bold text-white hover:bg-blue-800 active:bg-blue-900 transition-colors border-r border-blue-800 tracking-wider uppercase"
+              disabled={isSaving || loadingProjects}
+              className="py-3.5 text-center text-xs font-bold text-white hover:bg-blue-800 active:bg-blue-900 transition-colors border-r border-blue-800 tracking-wider uppercase disabled:opacity-60"
             >
-              {isSaving ? "SAVING..." : "SAVE"}
+              {isSaving ? "SAVING…" : "SAVE"}
             </button>
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="py-3 text-center text-xs font-bold text-slate-200 hover:text-white hover:bg-blue-800 active:bg-blue-900 transition-colors tracking-wider uppercase"
+              className="py-3.5 text-center text-xs font-bold text-slate-200 hover:text-white hover:bg-blue-800 active:bg-blue-900 transition-colors tracking-wider uppercase"
             >
               CANCEL
             </button>
           </div>
         </div>
-
       </form>
     </MobileLayout>
   );

@@ -1,5 +1,14 @@
 export type AttendanceStatus = "Present" | "Absent" | "Half Day" | "On Leave";
 
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  phone?: string;
+  token: string;
+}
+
 export interface EmployeeProfile {
   id: string;
   empId: string;
@@ -7,6 +16,8 @@ export interface EmployeeProfile {
   designation: string;
   department?: string;
   company: string;
+  email?: string;
+  phone?: string;
   photoUrl?: string;
   joiningDate?: string;
 }

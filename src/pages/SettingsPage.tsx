@@ -1,8 +1,9 @@
 import MobileLayout from "../components/layout/MobileLayout";
-import { DEFAULT_SUPERVISOR } from "../services/api";
-import { RefreshCw, Database, Smartphone, Shield, LogOut } from "lucide-react";
+import { getAuth } from "../services/api";
+import { RefreshCw, Database, Smartphone, Shield } from "lucide-react";
 
 export default function SettingsPage() {
+  const user = getAuth();
   const handleClearCache = () => {
     if (window.confirm("Reset local offline timesheet drafts?")) {
       localStorage.removeItem("ak_timesheets_data");
@@ -62,7 +63,7 @@ export default function SettingsPage() {
               <Shield size={16} className="text-gray-400" />
               <span>Supervisor Permission Level</span>
             </div>
-            <span className="text-blue-700 font-semibold">{DEFAULT_SUPERVISOR.designation}</span>
+            <span className="text-blue-700 font-semibold">{user?.role || "Supervisor"}</span>
           </div>
         </div>
 
