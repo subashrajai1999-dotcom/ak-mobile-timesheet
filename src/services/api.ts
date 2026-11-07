@@ -85,7 +85,72 @@ export const FALLBACK_PROJECTS = [
   { id: "p2", code: "AK-26-002", name: "Site Project B", location: "Abu Dhabi" },
 ];
 
-// ─── Offline Timesheet Storage (localStorage) ──────────────────────────────────
+// ─── API: Save Timesheet to PostgreSQL ────────────────────────────────────────
+
+export async function saveMobileTimesheetApi(payload: {
+  date: string;
+  attendanceStatus: string;
+  projectCode: string;
+  regularHrs: number;
+  normalOt: number;
+  holidayOt: number;
+  remarks: string;
+}): Promise<TimesheetEntry> {
+  const res = await api.post("/attendance/mobile-timesheet", payload);
+  const a = res.data.attendance;
+  return {
+    id:               a.id,
+    empId:            "",
+    employeeName:     getAuth()?.name || "",
+    date:             a.date,
+    attendanceStatus: a.attendanceStatus as any,
+    projectCode:      a.projectCode || payload.projectCode,
+    projectName:      a.projectName || "",
+    regularHrs:       a.regularHrs,
+    normalOt:         a.normalOt,
+    holidayOt:        a.holidayOt,
+    totalOt:          a.totalOt,
+    totalHours:       a.totalHours,
+    remarks:          a.remarks || "",
+    approvalStatus:   "Pending Approval",
+    nextApprover:     "Site Engineer",
+    createdAt:        a.createdAt,
+  };
+}
+
+// ─── API: Fetch My Timesheets from PostgreSQL ─────────────────────────────────
+
+export async function fetchMyTimesheets(month?: string): Promise<TimesheetEntry[]> {
+  try {
+    const url = month
+      ? `/attendance/my-timesheets?month=${month}`
+      : "/attendance/my-timesheets";
+    const res = await api.get(url);
+    const user = getAuth();
+    return (res.data.timesheets || []).map((a: any) => ({
+      id:               a.id,
+      empId:            user?.id || "",
+      employeeName:     user?.name || "",
+      date:             a.date,
+      attendanceStatus: a.attendanceStatus,
+      projectCode:      a.projectCode || "",
+      projectName:      a.projectName || "",
+      regularHrs:       a.regularHrs,
+      normalOt:         a.normalOt,
+      holidayOt:        a.holidayOt,
+      totalOt:          a.totalOt,
+      totalHours:       a.totalHours,
+      remarks:          a.remarks || "",
+      approvalStatus:   a.approvalStatus || "Pending Approval",
+      nextApprover:     "Site Engineer",
+      createdAt:        a.createdAt,
+    }));
+  } catch {
+    return getLocalTimesheets();
+  }
+}
+
+// ─── Offline Timesheet Storage (localStorage fallback) ────────────────────────
 
 const STORAGE_KEY = "ak_timesheets_data";
 

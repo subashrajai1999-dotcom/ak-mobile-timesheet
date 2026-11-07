@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MobileLayout from "../components/layout/MobileLayout";
-import { getAuth, getLocalTimesheets } from "../services/api";
+import { getAuth, fetchMyTimesheets, getLocalTimesheets } from "../services/api";
 import { TimesheetEntry } from "../types/timesheet.types";
 import { User, Clock, ChevronRight, CheckCircle2, AlertCircle, Building2 } from "lucide-react";
 
@@ -12,7 +12,11 @@ export default function HomePage() {
   const [currentTime, setCurrentTime] = useState("");
 
   useEffect(() => {
-    setTimesheets(getLocalTimesheets().slice(0, 3));
+    // Try fetching from real API, fall back to localStorage
+    fetchMyTimesheets()
+      .then((data) => setTimesheets(data.slice(0, 3)))
+      .catch(() => setTimesheets(getLocalTimesheets().slice(0, 3)));
+
     const tick = () => {
       const now = new Date();
       setCurrentTime(

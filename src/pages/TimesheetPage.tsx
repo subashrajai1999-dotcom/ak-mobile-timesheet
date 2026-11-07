@@ -1,9 +1,15 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import MobileLayout from "../components/layout/MobileLayout";
-import { getAuth, fetchProjects, saveLocalTimesheet, FALLBACK_PROJECTS } from "../services/api";
+import {
+  getAuth,
+  fetchProjects,
+  saveMobileTimesheetApi,
+  saveLocalTimesheet,
+  FALLBACK_PROJECTS,
+} from "../services/api";
 import { AttendanceStatus, ProjectSite } from "../types/timesheet.types";
-import { User, Calendar, Clock, MessageSquare, CheckCircle, ShieldCheck } from "lucide-react";
+import { User, Calendar, Clock, MessageSquare, CheckCircle, ShieldCheck, Wifi, WifiOff } from "lucide-react";
 
 function todayString() {
   return new Date().toISOString().split("T")[0];
@@ -26,6 +32,7 @@ export default function TimesheetPage() {
   const [remarks, setRemarks] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [savedOnline, setSavedOnline] = useState(false);
 
   // Load projects from AK backend
   useEffect(() => {
@@ -57,33 +64,48 @@ export default function TimesheetPage() {
     }
   };
 
-  const handleSave = (e: FormEvent) => {
+  const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     const selectedProj = projects.find((p) => p.code === projectCode);
 
-    saveLocalTimesheet({
-      empId: user?.id || "unknown",
-      employeeName: user?.name || "Unknown",
-      date,
-      attendanceStatus,
-      projectCode,
-      projectName: selectedProj?.name || projectCode,
-      regularHrs,
-      normalOt,
-      holidayOt,
-      totalOt,
-      totalHours,
-      remarks,
-      approvalStatus: "Pending Approval",
-      nextApprover: "Site Engineer",
-    });
+    // Try saving to PostgreSQL via real API first
+    let onlineSaved = false;
+    try {
+      await saveMobileTimesheetApi({
+        date,
+        attendanceStatus,
+        projectCode,
+        regularHrs,
+        normalOt,
+        holidayOt,
+        remarks,
+      });
+      onlineSaved = true;
+    } catch {
+      // Network unavailable — fall back to localStorage
+      saveLocalTimesheet({
+        empId:            user?.id || "unknown",
+        employeeName:     user?.name || "Unknown",
+        date,
+        attendanceStatus,
+        projectCode,
+        projectName:      selectedProj?.name || projectCode,
+        regularHrs,
+        normalOt,
+        holidayOt,
+        totalOt,
+        totalHours,
+        remarks,
+        approvalStatus:   "Pending Approval",
+        nextApprover:     "Site Engineer",
+      });
+    }
 
-    setTimeout(() => {
-      setIsSaving(false);
-      setShowSuccess(true);
-      setTimeout(() => navigate("/"), 1500);
-    }, 400);
+    setSavedOnline(onlineSaved);
+    setIsSaving(false);
+    setShowSuccess(true);
+    setTimeout(() => navigate("/"), 1800);
   };
 
   const employeeLabel = user ? `${user.name}` : "—";
@@ -92,9 +114,13 @@ export default function TimesheetPage() {
     <MobileLayout title="Time Sheet Record">
       {/* Success Banner */}
       {showSuccess && (
-        <div className="bg-emerald-600 text-white p-3 text-center text-xs font-bold flex items-center justify-center gap-2">
+        <div className={`text-white p-3 text-center text-xs font-bold flex items-center justify-center gap-2 ${savedOnline ? "bg-emerald-600" : "bg-amber-600"}`}>
           <CheckCircle size={16} />
-          <span>Timesheet saved! Sent for approval.</span>
+          <span>
+            {savedOnline
+              ? "✅ Saved to database! Sent for approval."
+              : "⚠ Saved offline (no network). Will sync when online."}
+          </span>
         </div>
       )}
 
