@@ -44,31 +44,34 @@ jobs:
         run: chmod +x android/gradlew
 
       - name: Build Debug APK
-        run: cd android && ./gradlew assembleDebug --stacktrace
+        run: |
+          cd android && ./gradlew assembleDebug --stacktrace
+          cd ..
+          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.3.apk
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ak-field-timesheet-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: ak-field-timesheet-v1.0.3-apk
+          path: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.3.apk
           retention-days: 14
 
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/master')
         with:
-          tag_name: v1.0.0-apk-${{ github.run_number }}
-          name: AK Field Timesheet APK v1.0.${{ github.run_number }}
+          tag_name: v1.0.3
+          name: AK Field Timesheet APK v1.0.3 (Updated Header & Captcha)
           body: |
-            ## 📱 AK Field Timesheet Android APK (v1.0.${{ github.run_number }})
+            ## 📱 AK Field Timesheet Android APK (v1.0.3)
             
-            Download the APK file below and install it directly on your Android phone!
+            ### ✨ What's New in this Build:
+            - **Non-Overlapping Header**: Redesigned role badge (`PM`, `SE`, `SUP`) so it never squishes the title or logout button.
+            - **Prominent Sign Out**: Big 38x38px red touch button with native in-app confirmation modal.
+            - **Security Captcha**: New dynamic alphanumeric Captcha with refresh button on login page.
+            - **Alternative Logout**: Added sign-out button inside Settings page.
             
-            ### What's included:
-            - Full Native Android Shell (Capacitor)
-            - AK Portal Web Login & PostgreSQL Attendance Sync
-            - Offline Draft Support
-            - Auto OT and Total Hours Calculation
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+            > **Important**: If you already have the previous version on your phone, please **UNINSTALL the old app first**, then install this new APK!
+          files: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.3.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
