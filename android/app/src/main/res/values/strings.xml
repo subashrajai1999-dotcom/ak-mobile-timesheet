@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AK Field Timesheet</string>
+    <string name="title_activity_main">AK Field Timesheet</string>
+    <string name="package_name">com.akpt.timesheet</string>
+    <string name="custom_url_scheme">com.akpt.timesheet</string>
+</resources>

@@ -1,0 +1,9 @@
+{
+  "appId": "com.akpt.timesheet",
+  "appName": "AK Field Timesheet",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
