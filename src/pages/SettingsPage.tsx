@@ -1,9 +1,18 @@
 import MobileLayout from "../components/layout/MobileLayout";
-import { getAuth } from "../services/api";
-import { RefreshCw, Database, Smartphone, Shield } from "lucide-react";
+import { getAuth, clearAuth } from "../services/api";
+import { RefreshCw, Database, Smartphone, Shield, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function SettingsPage() {
+  const navigate = useNavigate();
   const user = getAuth();
+
+  const handleLogout = () => {
+    if (window.confirm("Do you want to sign out of AK Field Portal?")) {
+      clearAuth();
+      navigate("/login", { replace: true });
+    }
+  };
   const handleClearCache = () => {
     if (window.confirm("Reset local offline timesheet drafts?")) {
       localStorage.removeItem("ak_timesheets_data");
@@ -67,13 +76,21 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Cache Management */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-2.5">
+        {/* Cache Management & Sign Out */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-3">
           <button
             onClick={handleClearCache}
             className="w-full text-center py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 transition-colors"
           >
             Reset Local Storage Cache
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="w-full text-center py-2.5 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-lg border border-red-200 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          >
+            <LogOut size={16} />
+            <span>Sign Out of AK Field Portal</span>
           </button>
         </div>
       </div>
