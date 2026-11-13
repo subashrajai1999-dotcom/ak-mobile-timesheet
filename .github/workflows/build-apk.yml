@@ -48,28 +48,28 @@ jobs:
           cd android
           ./gradlew assembleDebug --stacktrace
           cd ..
-          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.4.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.5.apk
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ak-field-timesheet-v1.0.4-apk
-          path: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.4.apk
+          name: ak-field-timesheet-v1.0.5-apk
+          path: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.5.apk
           retention-days: 14
 
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/master')
         with:
-          tag_name: v1.0.4
-          name: AK Field Timesheet APK v1.0.4 (App Switch & Exit Logout Guard)
+          tag_name: v1.0.5
+          name: AK Field Timesheet APK v1.0.5 (Slide-out Menu Drawer & Clean Settings)
           body: |
-            ## 📱 AK Field Timesheet Android APK (v1.0.4)
+            ## 📱 AK Field Timesheet Android APK (v1.0.5)
             
             ### ✨ What's New in this Build:
-            - **App Switch & Background Guard**: Prompts user when returning from another app or minimizing.
-            - **App Exit Confirmation**: Asks whether to Sign Out before closing the app.
-            - **Capacitor Native App State Integration**: Synchronized with Android lifecycle.
-          files: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.4.apk
+            - **Interactive Slide-out Drawer**: Tapping the hamburger menu (`☰`) now opens a side menu with user profile, navigation links, and Sign Out.
+            - **Removed Central Server Box**: Cleaned up the Settings page so internal backend server URLs are no longer visible.
+            - **App Exit & Inactive Guard**: Native session security alerts.
+          files: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.5.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

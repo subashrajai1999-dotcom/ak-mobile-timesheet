@@ -1,6 +1,6 @@
 import MobileLayout from "../components/layout/MobileLayout";
 import { getAuth, clearAuth } from "../services/api";
-import { RefreshCw, Database, Smartphone, Shield, LogOut } from "lucide-react";
+import { Database, Smartphone, Shield, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function SettingsPage() {
@@ -22,27 +22,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <MobileLayout title="Settings & Sync">
+    <MobileLayout title="Settings">
       <div className="p-4 space-y-4">
-        {/* Sync Status Card */}
-        <div className="bg-gradient-to-r from-blue-900 to-indigo-900 text-white rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-blue-200 uppercase tracking-wider font-semibold">Central Server</p>
-              <h3 className="text-xs font-bold mt-0.5">https://ravi-bkj6.onrender.com</h3>
-              <p className="text-[11px] text-emerald-300 mt-1 flex items-center gap-1">
-                ● Live & Connected
-              </p>
-            </div>
-            <button
-              onClick={() => alert("Syncing local records with Render database...")}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-lg text-white"
-            >
-              <RefreshCw size={18} />
-            </button>
-          </div>
-        </div>
-
         {/* General Settings */}
         <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-3 text-xs">
           <h4 className="font-bold text-gray-800 uppercase tracking-wider text-[11px] border-b border-gray-100 pb-2">
