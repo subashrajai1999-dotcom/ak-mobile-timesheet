@@ -6,10 +6,12 @@ import SelfServicePage from "./pages/SelfServicePage";
 import ApprovalsPage from "./pages/ApprovalsPage";
 import SettingsPage from "./pages/SettingsPage";
 import PrivateRoute from "./components/auth/PrivateRoute";
+import SessionExitModal from "./components/security/SessionExitModal";
 
 export default function App() {
   return (
     <Router>
+      <SessionExitModal />
       <Routes>
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />

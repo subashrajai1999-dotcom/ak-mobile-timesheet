@@ -48,31 +48,28 @@ jobs:
           cd android
           ./gradlew assembleDebug --stacktrace
           cd ..
-          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.3.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.4.apk
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ak-field-timesheet-v1.0.3-apk
-          path: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.3.apk
+          name: ak-field-timesheet-v1.0.4-apk
+          path: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.4.apk
           retention-days: 14
 
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/master')
         with:
-          tag_name: v1.0.3
-          name: AK Field Timesheet APK v1.0.3 (Updated Header & Captcha)
+          tag_name: v1.0.4
+          name: AK Field Timesheet APK v1.0.4 (App Switch & Exit Logout Guard)
           body: |
-            ## 📱 AK Field Timesheet Android APK (v1.0.3)
+            ## 📱 AK Field Timesheet Android APK (v1.0.4)
             
             ### ✨ What's New in this Build:
-            - **Non-Overlapping Header**: Redesigned role badge (`PM`, `SE`, `SUP`) so it never squishes the title or logout button.
-            - **Prominent Sign Out**: Big 38x38px red touch button with native in-app confirmation modal.
-            - **Security Captcha**: New dynamic alphanumeric Captcha with refresh button on login page.
-            - **Alternative Logout**: Added sign-out button inside Settings page.
-            
-            > **Important**: If you already have the previous version on your phone, please **UNINSTALL the old app first**, then install this new APK!
-          files: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.3.apk
+            - **App Switch & Background Guard**: Prompts user when returning from another app or minimizing.
+            - **App Exit Confirmation**: Asks whether to Sign Out before closing the app.
+            - **Capacitor Native App State Integration**: Synchronized with Android lifecycle.
+          files: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.4.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
