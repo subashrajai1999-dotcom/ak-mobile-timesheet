@@ -48,28 +48,29 @@ jobs:
           cd android
           ./gradlew assembleDebug --stacktrace
           cd ..
-          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.6.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.7.apk
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ak-field-timesheet-v1.0.6-apk
-          path: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.6.apk
+          name: ak-field-timesheet-v1.0.7-apk
+          path: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.7.apk
           retention-days: 14
 
       - name: Create GitHub Release with APK
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/master')
         with:
-          tag_name: v1.0.6
-          name: AK Field Timesheet APK v1.0.6 (English Modals & Safe-Area Header)
+          tag_name: v1.0.7
+          name: AK Field Timesheet APK v1.0.7 (Auto Load Today's Saved Record & Update Support)
           body: |
-            ## 📱 AK Field Timesheet Android APK (v1.0.6)
+            ## 📱 AK Field Timesheet Android APK (v1.0.7)
             
             ### ✨ What's New in this Build:
-            - **Mobile Header Safe-Area & Touch Optimization**: Generous status bar clearance (`pt-[max(env(safe-area-inset-top),24px)]`) and enlarged 44px touch targets ensure the 3-line hamburger menu is effortlessly tapable without device status bar overlap.
-            - **Professional English Security Verification**: Translated exit and app-resume dialogs to clean, professional English.
-            - **Slide-out Navigation Drawer**: Fast navigation between Dashboard, Timesheet Log, Approvals, Profile, and Settings.
-          files: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.6.apk
+            - **Auto-Load Saved Record**: When opening Time & Attendance or picking a date, the app automatically checks if a record was already saved in PostgreSQL for that date and pre-fills all data (Project, Hours, Status, Remarks).
+            - **Live DB Status Banner**: Shows "Today's Record Already Saved (In DB)" with current approval status.
+            - **Update Record Support**: Allows instant editing/updating with "UPDATE RECORD" button.
+            - **Header Safe-Area & Touch Optimization**: Generous status bar clearance with 44px hamburger menu touch target.
+          files: android/app/build/outputs/apk/debug/AK-Field-Timesheet-v1.0.7.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

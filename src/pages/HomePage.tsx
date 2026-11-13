@@ -142,7 +142,7 @@ export default function HomePage() {
               {timesheets.map((ts) => (
                 <div
                   key={ts.id}
-                  onClick={() => navigate("/timesheet/new")}
+                  onClick={() => navigate("/timesheet/new", { state: { date: ts.date } })}
                   className="flex items-center justify-between p-2.5 bg-gray-50 hover:bg-blue-50/50 rounded-lg border border-gray-200 cursor-pointer transition-colors"
                 >
                   <div>

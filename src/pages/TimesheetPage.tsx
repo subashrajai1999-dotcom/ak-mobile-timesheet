@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import MobileLayout from "../components/layout/MobileLayout";
 import {
   getAuth,
   fetchProjects,
+  fetchMyTimesheets,
   saveMobileTimesheetApi,
   saveLocalTimesheet,
   FALLBACK_PROJECTS,
 } from "../services/api";
-import { AttendanceStatus, ProjectSite } from "../types/timesheet.types";
-import { User, Calendar, Clock, MessageSquare, CheckCircle, ShieldCheck, Wifi, WifiOff } from "lucide-react";
+import { AttendanceStatus, ProjectSite, TimesheetEntry } from "../types/timesheet.types";
+import { User, Calendar, Clock, MessageSquare, CheckCircle, CheckCircle2, ShieldCheck, RefreshCw } from "lucide-react";
 
 function todayString() {
   return new Date().toISOString().split("T")[0];
@@ -17,13 +18,18 @@ function todayString() {
 
 export default function TimesheetPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = getAuth();
+
+  const initialDate = (location.state as any)?.date || new URLSearchParams(location.search).get("date") || todayString();
 
   const [projects, setProjects] = useState<ProjectSite[]>(FALLBACK_PROJECTS);
   const [loadingProjects, setLoadingProjects] = useState(true);
+  const [myRecords, setMyRecords] = useState<TimesheetEntry[]>([]);
+  const [loadingRecords, setLoadingRecords] = useState(true);
 
   // Form state
-  const [date, setDate] = useState(todayString());
+  const [date, setDate] = useState(initialDate);
   const [attendanceStatus, setAttendanceStatus] = useState<AttendanceStatus>("Present");
   const [projectCode, setProjectCode] = useState("");
   const [regularHrs, setRegularHrs] = useState<number>(8);
@@ -33,19 +39,63 @@ export default function TimesheetPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedOnline, setSavedOnline] = useState(false);
+  const [existingRecord, setExistingRecord] = useState<TimesheetEntry | null>(null);
 
-  // Load projects from AK backend
+  // 1. Load projects and user timesheet records
   useEffect(() => {
+    // Load projects
     fetchProjects().then((data) => {
       if (data.length > 0) {
         setProjects(data);
-        setProjectCode(data[0].code);
+        if (!projectCode) setProjectCode(data[0].code);
       } else {
-        setProjectCode(FALLBACK_PROJECTS[0].code);
+        if (!projectCode) setProjectCode(FALLBACK_PROJECTS[0].code);
       }
       setLoadingProjects(false);
     });
+
+    // Load user's recent records to check if today/chosen date is already saved
+    fetchMyTimesheets()
+      .then((records) => {
+        setMyRecords(records);
+        checkAndApplyRecord(date, records);
+        setLoadingRecords(false);
+      })
+      .catch(() => {
+        setLoadingRecords(false);
+      });
   }, []);
+
+  // Helper: check if a record exists for selected date and pre-fill form
+  const checkAndApplyRecord = (selectedDate: string, recordsList: TimesheetEntry[]) => {
+    const found = recordsList.find((r) => r.date === selectedDate);
+    if (found) {
+      setExistingRecord(found);
+      setAttendanceStatus(found.attendanceStatus as AttendanceStatus);
+      if (found.projectCode) setProjectCode(found.projectCode);
+      setRegularHrs(Number(found.regularHrs) || 0);
+      setNormalOt(Number(found.normalOt) || 0);
+      setHolidayOt(Number(found.holidayOt) || 0);
+      setRemarks(found.remarks || "");
+    } else {
+      setExistingRecord(null);
+      // Reset to standard defaults for new entry
+      setAttendanceStatus("Present");
+      setRegularHrs(8);
+      setNormalOt(0);
+      setHolidayOt(0);
+      setRemarks("");
+      if (projects.length > 0) {
+        setProjectCode(projects[0].code);
+      }
+    }
+  };
+
+  // Re-check whenever user changes the date
+  const handleDateChange = (newDate: string) => {
+    setDate(newDate);
+    checkAndApplyRecord(newDate, myRecords);
+  };
 
   // Auto-calculations
   const totalOt = useMemo(() => (Number(normalOt) || 0) + (Number(holidayOt) || 0), [normalOt, holidayOt]);
@@ -118,8 +168,37 @@ export default function TimesheetPage() {
           <CheckCircle size={16} />
           <span>
             {savedOnline
-              ? "✅ Saved to database! Sent for approval."
+              ? existingRecord
+                ? "✅ Timesheet updated in database! Changes saved."
+                : "✅ Saved to database! Sent for approval."
               : "⚠ Saved offline (no network). Will sync when online."}
+          </span>
+        </div>
+      )}
+
+      {/* Existing Record Indicator Banner */}
+      {existingRecord && !showSuccess && (
+        <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-3 mx-4 mt-3 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 flex-shrink-0">
+              <CheckCircle2 size={18} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-bold text-emerald-950">
+                  {date === todayString() ? "Today's Record Already Saved" : `Record Saved for ${date}`}
+                </span>
+                <span className="bg-emerald-200/80 text-emerald-800 text-[10px] font-bold px-1.5 py-0.2 rounded">
+                  {existingRecord.approvalStatus || "Pending Approval"}
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-700 truncate mt-0.5">
+                Loaded from DB • {existingRecord.projectName || existingRecord.projectCode || "AK Project"} ({existingRecord.totalHours} hrs)
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-bold text-emerald-800 bg-white border border-emerald-200 px-2 py-0.5 rounded shadow-2xs flex-shrink-0 ml-2">
+            In DB
           </span>
         </div>
       )}
@@ -149,7 +228,7 @@ export default function TimesheetPage() {
             <input
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) => handleDateChange(e.target.value)}
               className="w-full bg-white border-b-2 border-slate-300 py-1.5 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-600 font-mono"
             />
           </div>
@@ -287,15 +366,20 @@ export default function TimesheetPage() {
           </div>
         </div>
 
-        {/* Approval Status (auto) */}
+        {/* Approval Status */}
         <div className="flex items-start gap-3">
           <div className="w-8 pt-6 flex justify-center text-emerald-600">
             <CheckCircle size={20} />
           </div>
           <div className="flex-1">
             <label className="block text-[11px] font-medium text-slate-500 mb-1">Approval Status</label>
-            <div className="border-b border-slate-200 py-1.5 text-xs font-bold text-amber-600">
-              Pending Approval
+            <div className="border-b border-slate-200 py-1.5 text-xs font-bold text-amber-600 flex items-center justify-between">
+              <span>{existingRecord?.approvalStatus || "Pending Approval"}</span>
+              {existingRecord && (
+                <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold">
+                  Existing Record
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -306,14 +390,14 @@ export default function TimesheetPage() {
             <button
               type="submit"
               disabled={isSaving || loadingProjects}
-              className="py-3.5 text-center text-xs font-bold text-white hover:bg-blue-800 active:bg-blue-900 transition-colors border-r border-blue-800 tracking-wider uppercase disabled:opacity-60"
+              className="py-3.5 text-center text-xs font-bold text-white hover:bg-blue-800 active:bg-blue-900 transition-colors border-r border-blue-800 tracking-wider uppercase disabled:opacity-60 cursor-pointer flex items-center justify-center gap-1.5"
             >
-              {isSaving ? "SAVING…" : "SAVE"}
+              <span>{isSaving ? "SAVING…" : existingRecord ? "UPDATE RECORD" : "SAVE"}</span>
             </button>
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="py-3.5 text-center text-xs font-bold text-slate-200 hover:text-white hover:bg-blue-800 active:bg-blue-900 transition-colors tracking-wider uppercase"
+              className="py-3.5 text-center text-xs font-bold text-slate-200 hover:text-white hover:bg-blue-800 active:bg-blue-900 transition-colors tracking-wider uppercase cursor-pointer"
             >
               CANCEL
             </button>
