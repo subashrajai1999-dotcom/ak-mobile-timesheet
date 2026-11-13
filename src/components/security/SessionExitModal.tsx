@@ -118,9 +118,9 @@ export default function SessionExitModal() {
               <LogOut size={26} strokeWidth={2.3} />
             </div>
 
-            <h3 className="text-base font-bold text-gray-900">Closing the App?</h3>
+            <h3 className="text-base font-bold text-gray-900">Close Application</h3>
             <p className="text-xs text-gray-600 mt-1 mb-5 leading-relaxed">
-              Veliya porathukku munnaadi, <strong>Logout panna virumbureengala?</strong>
+              Would you like to <strong>Sign Out</strong> before closing the app, or keep your session active?
             </p>
 
             <div className="space-y-2">
@@ -164,13 +164,13 @@ export default function SessionExitModal() {
               <Shield size={26} strokeWidth={2.3} />
             </div>
 
-            <div className="inline-block bg-blue-50 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider mb-1">
-              Security Check
+            <div className="inline-block bg-blue-50 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-1 font-mono">
+              SECURITY VERIFICATION
             </div>
 
             <h3 className="text-base font-bold text-gray-900">Welcome Back</h3>
             <p className="text-xs text-gray-600 mt-1 mb-5 leading-relaxed">
-              Neenga vera app use pannitu thirumba vanthirukeenga. Logged in as <strong>{user?.name || "User"}</strong>.
+              You navigated away from the application. Your active session is preserved as <strong>{user?.name || "User"}</strong>.
             </p>
 
             <div className="space-y-2">

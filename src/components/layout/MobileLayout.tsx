@@ -116,17 +116,17 @@ export default function MobileLayout({
       <div className="w-full max-w-md bg-white min-h-screen flex flex-col shadow-2xl relative border-x border-slate-200">
 
         {/* Top Header Bar */}
-        <header className="bg-[#0f3f6e] text-white px-3 py-2.5 flex items-center justify-between sticky top-0 z-40 shadow-md">
+        <header className="bg-[#0f3f6e] text-white px-3.5 pt-[max(env(safe-area-inset-top,0px),24px)] pb-3 flex items-center justify-between sticky top-0 z-40 shadow-md">
           {/* Left section: Hamburger Menu or Back Button */}
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <button
               type="button"
               onClick={() => (isHome ? setShowDrawer(true) : navigate(-1))}
-              className="w-9 h-9 flex items-center justify-center hover:bg-white/10 active:bg-white/20 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
+              className="w-11 h-11 flex items-center justify-center hover:bg-white/10 active:bg-white/20 rounded-xl transition-colors flex-shrink-0 cursor-pointer touch-manipulation"
               title={isHome ? "Open Menu" : "Back"}
               aria-label={isHome ? "Open Menu" : "Back"}
             >
-              {isHome ? <Menu size={22} /> : <ChevronLeft size={24} />}
+              {isHome ? <Menu size={24} strokeWidth={2.4} /> : <ChevronLeft size={26} strokeWidth={2.4} />}
             </button>
             <div className="min-w-0 flex-1">
               <h1 className="text-sm font-bold tracking-wide leading-tight truncate">
@@ -139,10 +139,10 @@ export default function MobileLayout({
           </div>
 
           {/* Right section: Role badge + Big Logout Button */}
-          <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+          <div className="flex items-center gap-2 flex-shrink-0 ml-2">
             {/* Role Badge */}
             <div
-              className="bg-[#17528e] border border-blue-400/30 px-2 py-1 rounded text-white font-bold text-[10px] tracking-wide"
+              className="bg-[#17528e] border border-blue-400/30 px-2.5 py-1 rounded-md text-white font-bold text-[10px] tracking-wide"
               title={`Role: ${roleFull}`}
             >
               {roleShort}
@@ -152,7 +152,7 @@ export default function MobileLayout({
             <button
               type="button"
               onClick={() => setShowLogoutModal(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-red-500/20 hover:bg-red-500 active:bg-red-600 text-red-200 hover:text-white border border-red-400/30 transition-all cursor-pointer"
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-500/20 hover:bg-red-500 active:bg-red-600 text-red-200 hover:text-white border border-red-400/30 transition-all cursor-pointer touch-manipulation"
               title="Sign Out"
               aria-label="Sign Out"
             >
@@ -216,7 +216,7 @@ export default function MobileLayout({
           {/* Drawer Panel */}
           <div className="relative w-72 max-w-[80%] bg-white h-full shadow-2xl flex flex-col z-10 animate-slide-right">
             {/* Drawer Header */}
-            <div className="bg-gradient-to-br from-[#1a5b99] via-[#0f4376] to-[#0a2f55] text-white p-5 flex flex-col justify-between">
+            <div className="bg-gradient-to-br from-[#1a5b99] via-[#0f4376] to-[#0a2f55] text-white pt-[max(env(safe-area-inset-top,0px),24px)] px-5 pb-5 flex flex-col justify-between">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center font-black text-sm">
@@ -230,7 +230,7 @@ export default function MobileLayout({
                 <button
                   type="button"
                   onClick={() => setShowDrawer(false)}
-                  className="w-8 h-8 rounded-lg hover:bg-white/10 active:bg-white/20 flex items-center justify-center text-blue-100 hover:text-white cursor-pointer"
+                  className="w-9 h-9 rounded-xl hover:bg-white/10 active:bg-white/20 flex items-center justify-center text-blue-100 hover:text-white cursor-pointer touch-manipulation"
                   title="Close Menu"
                 >
                   <X size={20} />
